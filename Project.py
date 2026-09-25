@@ -58,6 +58,7 @@ with st.expander("👤 My Profile"):
 st.divider()
 st.header("🧮 Calculator")
 
+# Calculator state
 if "calc_display" not in st.session_state:
     st.session_state.calc_display = "0"
 
@@ -71,116 +72,155 @@ if "calc_new_number" not in st.session_state:
     st.session_state.calc_new_number = True
 
 
-def calculator_press(value):
+def format_calc_result(result):
+    """Format calculator results without unnecessary .0."""
+    if result == int(result):
+        return str(int(result))
+    return str(round(result, 10))
 
+
+def calculator_press(value):
+    """Handle every calculator button press."""
     display = st.session_state.calc_display
 
+    # Numbers
     if value.isdigit():
-
         if (
             st.session_state.calc_new_number
             or display == "0"
             or display == "Error"
         ):
-
             st.session_state.calc_display = value
-            st.session_state.calc_new_number = False
-
         else:
-
             st.session_state.calc_display += value
 
-    elif value == ".":
+        st.session_state.calc_new_number = False
+        return
 
-        if st.session_state.calc_new_number:
-
+    # Decimal point
+    if value == ".":
+        if display == "Error" or st.session_state.calc_new_number:
             st.session_state.calc_display = "0."
             st.session_state.calc_new_number = False
-
         elif "." not in display:
-
             st.session_state.calc_display += "."
+        return
 
-    elif value == "C":
-
+    # Clear
+    if value == "C":
         st.session_state.calc_display = "0"
         st.session_state.calc_first = None
         st.session_state.calc_operator = None
         st.session_state.calc_new_number = True
+        return
 
-    elif value in ["+", "-", "×", "÷"]:
-
+    # Operators
+    if value in ["+", "-", "×", "÷"]:
         try:
+            current = float(st.session_state.calc_display)
 
-            st.session_state.calc_first = float(display)
-            st.session_state.calc_operator = value
-            st.session_state.calc_new_number = True
-
-        except ValueError:
-
-            st.session_state.calc_display = "0"
-
-    elif value == "=":
-
-        if (
-            st.session_state.calc_first is not None
-            and st.session_state.calc_operator is not None
-        ):
-
-            try:
-
-                second = float(display)
+            # If there is already an operation waiting, calculate it first.
+            if (
+                st.session_state.calc_first is not None
+                and st.session_state.calc_operator is not None
+                and not st.session_state.calc_new_number
+            ):
                 first = st.session_state.calc_first
                 operator = st.session_state.calc_operator
 
                 if operator == "+":
-                    result = first + second
-
+                    current = first + current
                 elif operator == "-":
-                    result = first - second
-
+                    current = first - current
                 elif operator == "×":
-                    result = first * second
-
+                    current = first * current
                 elif operator == "÷":
-
-                    if second == 0:
-
+                    if current == 0:
                         st.session_state.calc_display = "Error"
                         st.session_state.calc_first = None
                         st.session_state.calc_operator = None
                         st.session_state.calc_new_number = True
-
                         return
+                    current = first / current
 
-                    result = first / second
+                st.session_state.calc_display = format_calc_result(current)
 
-                if result.is_integer():
+            st.session_state.calc_first = float(st.session_state.calc_display)
+            st.session_state.calc_operator = value
+            st.session_state.calc_new_number = True
 
-                    st.session_state.calc_display = str(
-                        int(result)
-                    )
+        except (ValueError, TypeError):
+            st.session_state.calc_display = "Error"
+            st.session_state.calc_first = None
+            st.session_state.calc_operator = None
+            st.session_state.calc_new_number = True
 
-                else:
+        return
 
-                    st.session_state.calc_display = str(
-                        round(result, 10)
-                    )
+    # Equals
+    if value == "=":
+        if (
+            st.session_state.calc_first is None
+            or st.session_state.calc_operator is None
+        ):
+            return
 
-                st.session_state.calc_first = None
-                st.session_state.calc_operator = None
-                st.session_state.calc_new_number = True
+        try:
+            first = st.session_state.calc_first
+            second = float(st.session_state.calc_display)
+            operator = st.session_state.calc_operator
 
-            except ValueError:
+            if operator == "+":
+                result = first + second
+            elif operator == "-":
+                result = first - second
+            elif operator == "×":
+                result = first * second
+            elif operator == "÷":
+                if second == 0:
+                    st.session_state.calc_display = "Error"
+                    st.session_state.calc_first = None
+                    st.session_state.calc_operator = None
+                    st.session_state.calc_new_number = True
+                    return
+                result = first / second
+            else:
+                return
 
-                st.session_state.calc_display = "Error"
+            st.session_state.calc_display = format_calc_result(result)
+            st.session_state.calc_first = None
+            st.session_state.calc_operator = None
+            st.session_state.calc_new_number = True
+
+        except (ValueError, TypeError):
+            st.session_state.calc_display = "Error"
+            st.session_state.calc_first = None
+            st.session_state.calc_operator = None
+            st.session_state.calc_new_number = True
 
 
-st.text_input(
-    "Display",
-    value=st.session_state.calc_display,
-    disabled=True,
-    key="calculator_display"
+# IMPORTANT:
+# Use markdown for the display instead of a disabled text_input.
+# This prevents Streamlit's widget state from overriding the calculator state.
+st.markdown(
+    f"""
+    <div style="
+        background: #1f2937;
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        text-align: right;
+        font-size: 36px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        min-height: 52px;
+        overflow-x: auto;
+        white-space: nowrap;
+    ">
+        {st.session_state.calc_display}
+    </div>
+    """,
+    unsafe_allow_html=True
 )
 
 calculator_rows = [
@@ -192,13 +232,10 @@ calculator_rows = [
 ]
 
 for row_number, row in enumerate(calculator_rows):
-
     columns = st.columns(len(row))
 
     for column, button_value in zip(columns, row):
-
         with column:
-
             st.button(
                 button_value,
                 key=f"calculator_{row_number}_{button_value}",
