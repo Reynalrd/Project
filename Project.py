@@ -205,20 +205,17 @@ def calculator_press(value):
 st.markdown(
     f"""
     <div style="
-        background: #1f2937;
-        color: white;
-        padding: 20px;
-        border-radius: 12px;
-        text-align: right;
-        font-size: 36px;
-        font-weight: 600;
-        margin-bottom: 16px;
-        min-height: 52px;
-        overflow-x: auto;
-        white-space: nowrap;
-    ">
-        {st.session_state.calc_display}
-    </div>
+        background:#1f2937;
+        color:white;
+        padding:16px;
+        border-radius:10px;
+        text-align:right;
+        font-size:34px;
+        font-weight:600;
+        margin-bottom:12px;
+        min-height:48px;
+        white-space:nowrap;
+    ">{st.session_state.calc_display}</div>
     """,
     unsafe_allow_html=True
 )
